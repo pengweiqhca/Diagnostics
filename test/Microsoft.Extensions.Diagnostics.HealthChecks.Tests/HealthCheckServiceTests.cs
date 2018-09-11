@@ -7,7 +7,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Logging.Testing;
 using Xunit;
 
 namespace Microsoft.Extensions.Diagnostics.HealthChecks
@@ -183,47 +182,6 @@ namespace Microsoft.Extensions.Diagnostics.HealthChecks
                     Assert.Equal(HealthCheckStatus.Healthy, actual.Value.Status);
                     Assert.Null(actual.Value.Exception);
                 });
-        }
-
-        [Fact]
-        public async Task CheckHealthAsync_SetsUpALoggerScopeForEachCheck()
-        {
-            // Arrange
-            var sink = new TestSink();
-            var check = new HealthCheck("TestScope", cancellationToken =>
-            {
-                Assert.Collection(sink.Scopes,
-                    actual =>
-                    {
-                        Assert.Equal(actual.LoggerName, typeof(HealthCheckService).FullName);
-                        Assert.Collection((IEnumerable<KeyValuePair<string, object>>)actual.Scope,
-                            item =>
-                            {
-                                Assert.Equal("HealthCheckName", item.Key);
-                                Assert.Equal("TestScope", item.Value);
-                            });
-                    });
-                return Task.FromResult(HealthCheckResult.Healthy());
-            });
-
-            var loggerFactory = new TestLoggerFactory(sink, enabled: true);
-            var service = CreateHealthChecksService(b =>
-            {
-                // Override the logger factory for testing
-                b.Services.AddSingleton<ILoggerFactory>(loggerFactory);
-
-                b.AddCheck(check);
-            });
-
-            // Act
-            var results = await service.CheckHealthAsync();
-
-            // Assert
-            Assert.Collection(results.Results, actual =>
-            {
-                Assert.Equal("TestScope", actual.Key);
-                Assert.Equal(HealthCheckStatus.Healthy, actual.Value.Status);
-            });
         }
 
         [Fact]

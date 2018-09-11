@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -61,9 +62,9 @@ namespace Microsoft.Extensions.Diagnostics.HealthChecks
                         try
                         {
                             Log.HealthCheckBegin(_logger, healthCheck);
-                            var stopwatch = ValueStopwatch.StartNew();
+                            var stopwatch = Stopwatch.StartNew();
                             result = await healthCheck.CheckHealthAsync(cancellationToken);
-                            Log.HealthCheckEnd(_logger, healthCheck, result, stopwatch.GetElapsedTime());
+                            Log.HealthCheckEnd(_logger, healthCheck, result, TimeSpan.FromMilliseconds(stopwatch.ElapsedMilliseconds));
                         }
                         catch (Exception ex)
                         {

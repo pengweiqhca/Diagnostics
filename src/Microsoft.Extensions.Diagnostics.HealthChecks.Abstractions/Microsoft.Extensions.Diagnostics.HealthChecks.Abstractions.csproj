@@ -1,16 +1,25 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
-    <Description>Abstractions for defining health checks in .NET applications
+    <PropertyGroup>
+        <Description>Abstractions for defining health checks in .NET applications
 
 Commonly Used Types
 Microsoft.Extensions.Diagnostics.HealthChecks.IHealthCheck
     </Description>
-    <RootNamespace>Microsoft.Extensions.Diagnostics.HealthChecks</RootNamespace>
-    <TargetFramework>netstandard2.0</TargetFramework>
-    <NoWarn>$(NoWarn);CS1591</NoWarn>
-    <GenerateDocumentationFile>true</GenerateDocumentationFile>
-    <PackageTags>diagnostics;healthchecks</PackageTags>
-  </PropertyGroup>
+        <RootNamespace>Microsoft.Extensions.Diagnostics.HealthChecks</RootNamespace>
+        <TargetFramework>netstandard2.0</TargetFramework>
+        <NoWarn>$(NoWarn);CS1591</NoWarn>
+        <GenerateDocumentationFile>true</GenerateDocumentationFile>
+        <PackageTags>diagnostics;healthchecks</PackageTags>
+
+        <Product>Microsoft ASP.NET Core</Product>
+        <RepositoryUrl>https://github.com/aspnet/Diagnostics</RepositoryUrl>
+        <RepositoryType>git</RepositoryType>
+        <AssemblyOriginatorKeyFile>..\..\Key.snk</AssemblyOriginatorKeyFile>
+        <SignAssembly>true</SignAssembly>
+        <PublicSign Condition="'$(OS)' != 'Windows_NT'">true</PublicSign>
+        <LangVersion>latest</LangVersion>
+        <Version>2.1.1</Version>
+    </PropertyGroup>
 
 </Project>
