@@ -11,6 +11,7 @@ Microsoft.Extensions.Diagnostics.HealthChecks.IHealthChecksBuilder
         <GenerateDocumentationFile>true</GenerateDocumentationFile>
         <PackageTags>diagnostics;healthchecks</PackageTags>
 
+        <GeneratePackageOnBuild Condition="'$(Configuration)'=='Release'">true</GeneratePackageOnBuild>
         <Product>Microsoft ASP.NET Core</Product>
         <RepositoryUrl>https://github.com/aspnet/Diagnostics</RepositoryUrl>
         <RepositoryType>git</RepositoryType>
