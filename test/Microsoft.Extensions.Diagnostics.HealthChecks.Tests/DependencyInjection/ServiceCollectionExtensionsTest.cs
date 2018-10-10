@@ -1,12 +1,13 @@
 // Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
-using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
+using System.Linq;
 using Xunit;
 
-namespace Microsoft.Extensions.Diagnostics.HealthChecks
+namespace Microsoft.Extensions.DependencyInjection
 {
-    public class ServiceCollectionExtensionsTests
+    public class ServiceCollectionExtensionsTest
     {
         [Fact]
         public void AddHealthChecks_RegistersSingletonHealthCheckServiceIdempotently()
@@ -19,12 +20,18 @@ namespace Microsoft.Extensions.Diagnostics.HealthChecks
             services.AddHealthChecks();
 
             // Assert
-            Assert.Collection(services,
+            Assert.Collection(services.OrderBy(s => s.ServiceType.FullName),
                 actual =>
                 {
                     Assert.Equal(ServiceLifetime.Singleton, actual.Lifetime);
-                    Assert.Equal(typeof(IHealthCheckService), actual.ServiceType);
-                    Assert.Equal(typeof(HealthCheckService), actual.ImplementationType);
+                    Assert.Equal(typeof(HealthCheckService), actual.ServiceType);
+                    Assert.Equal(typeof(DefaultHealthCheckService), actual.ImplementationType);
+                    Assert.Null(actual.ImplementationInstance);
+                    Assert.Null(actual.ImplementationFactory);
+                },
+                actual =>
+                {
+                    Assert.Equal(ServiceLifetime.Singleton, actual.Lifetime);
                     Assert.Null(actual.ImplementationInstance);
                     Assert.Null(actual.ImplementationFactory);
                 });

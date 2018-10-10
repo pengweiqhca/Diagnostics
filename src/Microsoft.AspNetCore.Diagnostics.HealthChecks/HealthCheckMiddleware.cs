@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Options;
+using Microsoft.Net.Http.Headers;
 
 namespace Microsoft.AspNetCore.Diagnostics.HealthChecks
 {
@@ -15,12 +16,12 @@ namespace Microsoft.AspNetCore.Diagnostics.HealthChecks
     {
         private readonly RequestDelegate _next;
         private readonly HealthCheckOptions _healthCheckOptions;
-        private readonly IHealthCheckService _healthCheckService;
+        private readonly HealthCheckService _healthCheckService;
 
         public HealthCheckMiddleware(
             RequestDelegate next,
             IOptions<HealthCheckOptions> healthCheckOptions,
-            IHealthCheckService healthCheckService)
+            HealthCheckService healthCheckService)
         {
             if (next == null)
             {
@@ -61,7 +62,7 @@ namespace Microsoft.AspNetCore.Diagnostics.HealthChecks
             if (!_healthCheckOptions.ResultStatusCodes.TryGetValue(result.Status, out var statusCode))
             {
                 var message =
-                    $"No status code mapping found for {nameof(HealthCheckStatus)} value: {result.Status}." +
+                    $"No status code mapping found for {nameof(HealthStatus)} value: {result.Status}." +
                     $"{nameof(HealthCheckOptions)}.{nameof(HealthCheckOptions.ResultStatusCodes)} must contain" +
                     $"an entry for {result.Status}.";
 
@@ -69,6 +70,15 @@ namespace Microsoft.AspNetCore.Diagnostics.HealthChecks
             }
 
             httpContext.Response.StatusCode = statusCode;
+
+            if (!_healthCheckOptions.SuppressCacheHeaders)
+            {
+                // Similar to: https://github.com/aspnet/Security/blob/7b6c9cf0eeb149f2142dedd55a17430e7831ea99/src/Microsoft.AspNetCore.Authentication.Cookies/CookieAuthenticationHandler.cs#L377-L379
+                var headers = httpContext.Response.Headers;
+                headers[HeaderNames.CacheControl] = "no-store, no-cache";
+                headers[HeaderNames.Pragma] = "no-cache";
+                headers[HeaderNames.Expires] = "Thu, 01 Jan 1970 00:00:00 GMT";
+            }
 
             if (_healthCheckOptions.ResponseWriter != null)
             {
@@ -103,7 +113,7 @@ namespace Microsoft.AspNetCore.Diagnostics.HealthChecks
 
             if (notFound.Count > 0)
             {
-                var message = 
+                var message =
                     $"The following health checks were not found: '{string.Join(", ", notFound)}'. " +
                     $"Registered health checks: '{string.Join(", ", checks.Keys)}'.";
                 throw new InvalidOperationException(message);

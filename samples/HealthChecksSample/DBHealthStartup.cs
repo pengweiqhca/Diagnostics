@@ -8,9 +8,9 @@ using Microsoft.Extensions.DependencyInjection;
 namespace HealthChecksSample
 {
     // Pass in `--scenario db` at the command line to run this sample.
-    public class DBHealthStartup
+    public class DbHealthStartup
     {
-        public DBHealthStartup(IConfiguration configuration)
+        public DbHealthStartup(IConfiguration configuration)
         {
             Configuration = configuration;
         }
@@ -22,7 +22,7 @@ namespace HealthChecksSample
             // Registers required services for health checks
             services.AddHealthChecks()
                 // Add a health check for a SQL database
-                .AddCheck(new SqlConnectionHealthCheck("MyDatabase", Configuration["ConnectionStrings:DefaultConnection"]));
+                .AddCheck("MyDatabase", new SqlConnectionHealthCheck(Configuration["ConnectionStrings:DefaultConnection"]));
         }
 
         public void Configure(IApplicationBuilder app, IHostingEnvironment env)
