@@ -7,7 +7,11 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 
+#if NET45
+namespace Autofac
+#else
 namespace Microsoft.Extensions.DependencyInjection
+#endif
 {
     /// <summary>
     /// Provides extension methods for registering delegates with the <see cref="IHealthChecksBuilder"/>.

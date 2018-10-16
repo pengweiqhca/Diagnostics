@@ -5,7 +5,11 @@ using System;
 using System.Collections.Generic;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 
+#if NET45
+namespace Autofac
+#else
 namespace Microsoft.Extensions.DependencyInjection
+#endif
 {
     /// <summary>
     /// Provides basic extension methods for registering <see cref="IHealthCheck"/> instances in an <see cref="IHealthChecksBuilder"/>.
@@ -48,7 +52,7 @@ namespace Microsoft.Extensions.DependencyInjection
 
             return builder.Add(new HealthCheckRegistration(name, instance, failureStatus, tags));
         }
-
+        #if !NET45
         /// <summary>
         /// Adds a new health check with the specified name and implementation.
         /// </summary>
@@ -187,5 +191,6 @@ namespace Microsoft.Extensions.DependencyInjection
 
             return builder.Add(new HealthCheckRegistration(name, s => ActivatorUtilities.CreateInstance<T>(s, args), failureStatus, tags));
         }
+#endif
     }
 }

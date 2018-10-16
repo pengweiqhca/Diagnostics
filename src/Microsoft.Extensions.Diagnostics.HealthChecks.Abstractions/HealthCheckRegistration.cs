@@ -49,7 +49,7 @@ namespace Microsoft.Extensions.Diagnostics.HealthChecks
 
             Name = name;
             FailureStatus = failureStatus ?? HealthStatus.Unhealthy;
-            Tags = new HashSet<string>(tags ?? Array.Empty<string>(), StringComparer.OrdinalIgnoreCase);
+            Tags = new HashSet<string>(tags ?? new string[0], StringComparer.OrdinalIgnoreCase);
             Factory = (_) => instance;
         }
 
@@ -81,7 +81,7 @@ namespace Microsoft.Extensions.Diagnostics.HealthChecks
 
             Name = name;
             FailureStatus = failureStatus ?? HealthStatus.Unhealthy;
-            Tags = new HashSet<string>(tags ?? Array.Empty<string>(), StringComparer.OrdinalIgnoreCase);
+            Tags = new HashSet<string>(tags ?? new string[0], StringComparer.OrdinalIgnoreCase);
             Factory = factory;
         }
 
