@@ -16,7 +16,7 @@ Microsoft.Extensions.Diagnostics.HealthChecks.IHealthChecksBuilder
         <SignAssembly>true</SignAssembly>
         <PublicSign Condition="'$(OS)' != 'Windows_NT'">true</PublicSign>
         <LangVersion>latest</LangVersion>
-        <Version>2.1.2-beta6</Version>
+        <Version>2.1.2</Version>
     </PropertyGroup>
 
     <ItemGroup Condition="'$(TargetFramework)' == 'net461' OR '$(TargetFramework)' == 'netstandard2.0'">
