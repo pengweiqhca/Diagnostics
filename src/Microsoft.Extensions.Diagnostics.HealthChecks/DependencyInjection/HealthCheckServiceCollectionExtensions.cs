@@ -29,7 +29,22 @@ namespace Microsoft.Extensions.DependencyInjection
         public static IHealthChecksBuilder AddHealthChecks(this ContainerBuilder services)
         {
             services.RegisterType<DefaultHealthCheckService>().As<HealthCheckService>().SingleInstance();
-            return new HealthChecksBuilder();
+
+            var builder = new HealthChecksBuilder();
+
+            services.Register(context =>
+            {
+                var options = new HealthCheckServiceOptions();
+
+                foreach (var reg in builder.Build())
+                {
+                    options.Registrations.Add(reg);
+                }
+
+                return options;
+            }).SingleInstance();
+
+            return builder;
 #else
         public static IHealthChecksBuilder AddHealthChecks(this IServiceCollection services)
         {
