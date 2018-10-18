@@ -22,7 +22,7 @@ using Microsoft.Extensions.Options;
 
 namespace Microsoft.Extensions.Diagnostics.HealthChecks
 {
-    internal class DefaultHealthCheckService : HealthCheckService
+    public class DefaultHealthCheckService : HealthCheckService
     {
         private readonly IServiceScopeFactory _scopeFactory;
 #if NET45

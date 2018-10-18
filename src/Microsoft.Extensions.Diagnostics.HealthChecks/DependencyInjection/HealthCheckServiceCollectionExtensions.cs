@@ -28,7 +28,7 @@ namespace Microsoft.Extensions.DependencyInjection
 #if NET45
         public static IHealthChecksBuilder AddHealthChecks(this ContainerBuilder services)
         {
-            services.RegisterType<DefaultHealthCheckService>().As<HealthCheckService>();
+            services.RegisterType<DefaultHealthCheckService>().As<HealthCheckService>().SingleInstance();
             return new HealthChecksBuilder();
 #else
         public static IHealthChecksBuilder AddHealthChecks(this IServiceCollection services)
