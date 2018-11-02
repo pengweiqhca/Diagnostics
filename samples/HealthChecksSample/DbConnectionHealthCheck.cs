@@ -9,18 +9,21 @@ using Microsoft.Extensions.Diagnostics.HealthChecks;
 
 namespace HealthChecksSample
 {
-    public abstract class DbConnectionHealthCheck : IHealthCheck
+    public class DbConnectionHealthCheck : IHealthCheck
     {
-        protected DbConnectionHealthCheck(string connectionString)
-            : this(connectionString, testQuery: null)
+        public DbConnectionHealthCheck(DbProviderFactory factory, string connectionString)
+            : this(factory, connectionString, testQuery: null)
         {
         }
 
-        protected DbConnectionHealthCheck(string connectionString, string testQuery)
+        public DbConnectionHealthCheck(DbProviderFactory factory, string connectionString, string testQuery)
         {
+            Factory = factory ?? throw new ArgumentNullException(nameof(factory));
             ConnectionString = connectionString ?? throw new ArgumentNullException(nameof(connectionString));
             TestQuery = testQuery;
         }
+
+        protected DbProviderFactory Factory { get; }
 
         protected string ConnectionString { get; }
 
@@ -31,14 +34,13 @@ namespace HealthChecksSample
         // In most cases this is not necessary, but if you find it necessary, choose a simple query such as 'SELECT 1'.
         protected string TestQuery { get; }
 
-        protected abstract DbConnection CreateConnection(string connectionString);
-
         public async Task<HealthCheckResult> CheckHealthAsync(HealthCheckContext context, CancellationToken cancellationToken = default(CancellationToken))
         {
-            using (var connection = CreateConnection(ConnectionString))
+            using (var connection = Factory.CreateConnection())
             {
                 try
                 {
+                    connection.ConnectionString = ConnectionString;
                     await connection.OpenAsync(cancellationToken);
 
                     if (TestQuery != null)

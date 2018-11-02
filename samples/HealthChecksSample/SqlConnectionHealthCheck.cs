@@ -13,13 +13,8 @@ namespace HealthChecksSample
         }
 
         public SqlConnectionHealthCheck(string connectionString, string testQuery)
-            : base(connectionString, testQuery ?? DefaultTestQuery)
+            : base(SqlClientFactory.Instance, connectionString, testQuery ?? DefaultTestQuery)
         {
-        }
-
-        protected override DbConnection CreateConnection(string connectionString)
-        {
-            return new SqlConnection(connectionString);
         }
     }
 }
