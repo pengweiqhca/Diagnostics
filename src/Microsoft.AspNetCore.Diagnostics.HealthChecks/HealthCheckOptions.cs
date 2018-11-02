@@ -33,9 +33,6 @@ namespace Microsoft.AspNetCore.Diagnostics.HealthChecks
             { HealthStatus.Healthy, StatusCodes.Status200OK },
             { HealthStatus.Degraded, StatusCodes.Status200OK },
             { HealthStatus.Unhealthy, StatusCodes.Status503ServiceUnavailable },
-
-            // This means that a health check failed, so 500 is appropriate. This is an error.
-            { HealthStatus.Failed, StatusCodes.Status500InternalServerError },
         };
 
         /// <summary>
@@ -48,11 +45,19 @@ namespace Microsoft.AspNetCore.Diagnostics.HealthChecks
         public Func<HttpContext, HealthReport, Task> ResponseWriter { get; set; } = HealthCheckResponseWriters.WriteMinimalPlaintext;
 
         /// <summary>
-        /// Gets or sets a value that controls whether the health check middleware will add HTTP headers to prevent
-        /// response caching. If the value is <c>false</c> the health check middleware will set or override the 
+        /// Gets or sets a value that controls whether responses from the health check middleware can be cached.
+        /// </summary>
+        /// <remarks>
+        /// <para>
+        /// The health check middleware does not perform caching of any kind. This setting configures whether
+        /// the middleware will apply headers to the HTTP response that instruct clients to avoid caching.
+        /// </para>
+        /// <para>
+        /// If the value is <c>false</c> the health check middleware will set or override the 
         /// <c>Cache-Control</c>, <c>Expires</c>, and <c>Pragma</c> headers to prevent response caching. If the value 
         /// is <c>true</c> the health check middleware will not modify the cache headers of the response.
-        /// </summary>
-        public bool SuppressCacheHeaders { get; set; }
+        /// </para>
+        /// </remarks>
+        public bool AllowCachingResponses { get; set; }
     }
 }

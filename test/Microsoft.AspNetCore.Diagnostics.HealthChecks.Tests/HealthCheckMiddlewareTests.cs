@@ -110,9 +110,9 @@ namespace Microsoft.AspNetCore.Diagnostics.HealthChecks
                 .ConfigureServices(services =>
                 {
                     services.AddHealthChecks()
-                        .AddCheck("Foo", () => HealthCheckResult.Passed("A-ok!"))
-                        .AddCheck("Bar", () => HealthCheckResult.Passed("A-ok!"))
-                        .AddCheck("Baz", () => HealthCheckResult.Passed("A-ok!"));
+                        .AddCheck("Foo", () => HealthCheckResult.Healthy("A-ok!"))
+                        .AddCheck("Bar", () => HealthCheckResult.Healthy("A-ok!"))
+                        .AddCheck("Baz", () => HealthCheckResult.Healthy("A-ok!"));
                 });
             var server = new TestServer(builder);
             var client = server.CreateClient();
@@ -135,9 +135,9 @@ namespace Microsoft.AspNetCore.Diagnostics.HealthChecks
                 .ConfigureServices(services =>
                 {
                     services.AddHealthChecks()
-                        .AddCheck("Foo", () => HealthCheckResult.Passed("A-ok!"))
-                        .AddCheck("Bar", () => HealthCheckResult.Failed("Not so great."), failureStatus: HealthStatus.Degraded)
-                        .AddCheck("Baz", () => HealthCheckResult.Passed("A-ok!"));
+                        .AddCheck("Foo", () => HealthCheckResult.Healthy("A-ok!"))
+                        .AddCheck("Bar", () => HealthCheckResult.Degraded("Not so great."))
+                        .AddCheck("Baz", () => HealthCheckResult.Healthy("A-ok!"));
                 });
             var server = new TestServer(builder);
             var client = server.CreateClient();
@@ -160,9 +160,9 @@ namespace Microsoft.AspNetCore.Diagnostics.HealthChecks
                 .ConfigureServices(services =>
                 {
                     services.AddHealthChecks()
-                        .AddAsyncCheck("Foo", () => Task.FromResult(HealthCheckResult.Passed("A-ok!")))
-                        .AddAsyncCheck("Bar", () => Task.FromResult(HealthCheckResult.Failed("Pretty bad.")))
-                        .AddAsyncCheck("Baz", () => Task.FromResult(HealthCheckResult.Passed("A-ok!")));
+                        .AddAsyncCheck("Foo", () => Task.FromResult(HealthCheckResult.Healthy("A-ok!")))
+                        .AddAsyncCheck("Bar", () => Task.FromResult(HealthCheckResult.Unhealthy("Pretty bad.")))
+                        .AddAsyncCheck("Baz", () => Task.FromResult(HealthCheckResult.Healthy("A-ok!")));
                 });
             var server = new TestServer(builder);
             var client = server.CreateClient();
@@ -175,7 +175,7 @@ namespace Microsoft.AspNetCore.Diagnostics.HealthChecks
         }
 
         [Fact]
-        public async Task StatusCodeIs500IfCheckIsFailed()
+        public async Task StatusCodeIs503IfCheckHasUnhandledException()
         {
             var builder = new WebHostBuilder()
                 .Configure(app =>
@@ -185,18 +185,18 @@ namespace Microsoft.AspNetCore.Diagnostics.HealthChecks
                 .ConfigureServices(services =>
                 {
                     services.AddHealthChecks()
-                        .AddAsyncCheck("Foo", () => Task.FromResult(HealthCheckResult.Passed("A-ok!")))
+                        .AddAsyncCheck("Foo", () => Task.FromResult(HealthCheckResult.Healthy("A-ok!")))
                         .AddAsyncCheck("Bar", () => throw null)
-                        .AddAsyncCheck("Baz", () => Task.FromResult(HealthCheckResult.Passed("A-ok!")));
+                        .AddAsyncCheck("Baz", () => Task.FromResult(HealthCheckResult.Healthy("A-ok!")));
                 });
             var server = new TestServer(builder);
             var client = server.CreateClient();
 
             var response = await client.GetAsync("/health");
 
-            Assert.Equal(HttpStatusCode.InternalServerError, response.StatusCode);
+            Assert.Equal(HttpStatusCode.ServiceUnavailable, response.StatusCode);
             Assert.Equal("text/plain", response.Content.Headers.ContentType.ToString());
-            Assert.Equal("Failed", await response.Content.ReadAsStringAsync());
+            Assert.Equal("Unhealthy", await response.Content.ReadAsStringAsync());
         }
 
         [Fact]
@@ -223,9 +223,9 @@ namespace Microsoft.AspNetCore.Diagnostics.HealthChecks
                 .ConfigureServices(services =>
                 {
                     services.AddHealthChecks()
-                        .AddAsyncCheck("Foo", () => Task.FromResult(HealthCheckResult.Passed("A-ok!")))
-                        .AddAsyncCheck("Bar", () => Task.FromResult(HealthCheckResult.Failed("Pretty bad.")))
-                        .AddAsyncCheck("Baz", () => Task.FromResult(HealthCheckResult.Passed("A-ok!")));
+                        .AddAsyncCheck("Foo", () => Task.FromResult(HealthCheckResult.Healthy("A-ok!")))
+                        .AddAsyncCheck("Bar", () => Task.FromResult(HealthCheckResult.Unhealthy("Pretty bad.")))
+                        .AddAsyncCheck("Baz", () => Task.FromResult(HealthCheckResult.Healthy("A-ok!")));
                 });
             var server = new TestServer(builder);
             var client = server.CreateClient();
@@ -252,9 +252,9 @@ namespace Microsoft.AspNetCore.Diagnostics.HealthChecks
                 .ConfigureServices(services =>
                 {
                     services.AddHealthChecks()
-                        .AddAsyncCheck("Foo", () => Task.FromResult(HealthCheckResult.Passed("A-ok!")))
-                        .AddAsyncCheck("Bar", () => Task.FromResult(HealthCheckResult.Failed("Pretty bad.")))
-                        .AddAsyncCheck("Baz", () => Task.FromResult(HealthCheckResult.Passed("A-ok!")));
+                        .AddAsyncCheck("Foo", () => Task.FromResult(HealthCheckResult.Healthy("A-ok!")))
+                        .AddAsyncCheck("Bar", () => Task.FromResult(HealthCheckResult.Unhealthy("Pretty bad.")))
+                        .AddAsyncCheck("Baz", () => Task.FromResult(HealthCheckResult.Healthy("A-ok!")));
                 });
             var server = new TestServer(builder);
             var client = server.CreateClient();
@@ -324,7 +324,7 @@ namespace Microsoft.AspNetCore.Diagnostics.HealthChecks
                 {
                     app.UseHealthChecks("/health", new HealthCheckOptions()
                     {
-                        SuppressCacheHeaders = true,
+                        AllowCachingResponses = true,
                     });
                 })
                 .ConfigureServices(services =>
@@ -357,10 +357,10 @@ namespace Microsoft.AspNetCore.Diagnostics.HealthChecks
                 .ConfigureServices(services =>
                 {
                     services.AddHealthChecks()
-                        .AddAsyncCheck("Foo", () => Task.FromResult(HealthCheckResult.Passed("A-ok!")))
+                        .AddAsyncCheck("Foo", () => Task.FromResult(HealthCheckResult.Healthy("A-ok!")))
                         // Will get filtered out
-                        .AddAsyncCheck("Bar", () => Task.FromResult(HealthCheckResult.Failed("A-ok!")))
-                        .AddAsyncCheck("Baz", () => Task.FromResult(HealthCheckResult.Passed("A-ok!")));
+                        .AddAsyncCheck("Bar", () => Task.FromResult(HealthCheckResult.Unhealthy("A-ok!")))
+                        .AddAsyncCheck("Baz", () => Task.FromResult(HealthCheckResult.Healthy("A-ok!")));
                 });
             var server = new TestServer(builder);
             var client = server.CreateClient();
@@ -389,6 +389,131 @@ namespace Microsoft.AspNetCore.Diagnostics.HealthChecks
             var client = server.CreateClient();
 
             var response = await client.GetAsync("http://localhost:5001/health");
+
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+            Assert.Equal("text/plain", response.Content.Headers.ContentType.ToString());
+            Assert.Equal("Healthy", await response.Content.ReadAsStringAsync());
+        }
+
+        [Fact]
+        public async Task CanListenWithPath_AcceptsRequestWithExtraSlash()
+        {
+            var builder = new WebHostBuilder()
+                .Configure(app =>
+                {
+                    app.UseHealthChecks("/health");
+                })
+                .ConfigureServices(services =>
+                {
+                    services.AddHealthChecks();
+                });
+
+            var server = new TestServer(builder);
+            var client = server.CreateClient();
+
+            var response = await client.GetAsync("http://localhost:5001/health/");
+
+            Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+        }
+
+        [Fact]
+        public async Task CanListenWithPath_AcceptsRequestWithCaseInsensitiveMatch()
+        {
+            var builder = new WebHostBuilder()
+                .Configure(app =>
+                {
+                    app.UseHealthChecks("/health");
+                })
+                .ConfigureServices(services =>
+                {
+                    services.AddHealthChecks();
+                });
+
+            var server = new TestServer(builder);
+            var client = server.CreateClient();
+
+            var response = await client.GetAsync("http://localhost:5001/HEALTH");
+
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+            Assert.Equal("text/plain", response.Content.Headers.ContentType.ToString());
+            Assert.Equal("Healthy", await response.Content.ReadAsStringAsync());
+        }
+
+        [Fact]
+        public async Task CanListenWithPath_RejectsRequestWithExtraSegments()
+        {
+            var builder = new WebHostBuilder()
+                .Configure(app =>
+                {
+                    app.UseHealthChecks("/health");
+                })
+                .ConfigureServices(services =>
+                {
+                    services.AddHealthChecks();
+                });
+
+            var server = new TestServer(builder);
+            var client = server.CreateClient();
+
+            var response = await client.GetAsync("http://localhost:5001/health/detailed");
+
+            Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
+        }
+
+        // See: https://github.com/aspnet/Diagnostics/issues/511
+        [Fact]
+        public async Task CanListenWithPath_MultipleMiddleware_LeastSpecificFirst()
+        {
+            var builder = new WebHostBuilder()
+                .Configure(app =>
+                {
+                    // Throws if used
+                    app.UseHealthChecks("/health", new HealthCheckOptions()
+                    {
+                        ResponseWriter = (c, r) => throw null,
+                    });
+
+                    app.UseHealthChecks("/health/detailed");
+                })
+                .ConfigureServices(services =>
+                {
+                    services.AddHealthChecks();
+                });
+
+            var server = new TestServer(builder);
+            var client = server.CreateClient();
+
+            var response = await client.GetAsync("http://localhost:5001/health/detailed");
+
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+            Assert.Equal("text/plain", response.Content.Headers.ContentType.ToString());
+            Assert.Equal("Healthy", await response.Content.ReadAsStringAsync());
+        }
+
+        // See: https://github.com/aspnet/Diagnostics/issues/511
+        [Fact]
+        public async Task CanListenWithPath_MultipleMiddleware_MostSpecificFirst()
+        {
+            var builder = new WebHostBuilder()
+                .Configure(app =>
+                {
+                    app.UseHealthChecks("/health/detailed");
+
+                    // Throws if used
+                    app.UseHealthChecks("/health", new HealthCheckOptions()
+                    {
+                        ResponseWriter = (c, r) => throw null,
+                    });
+                })
+                .ConfigureServices(services =>
+                {
+                    services.AddHealthChecks();
+                });
+
+            var server = new TestServer(builder);
+            var client = server.CreateClient();
+
+            var response = await client.GetAsync("http://localhost:5001/health/detailed");
 
             Assert.Equal(HttpStatusCode.OK, response.StatusCode);
             Assert.Equal("text/plain", response.Content.Headers.ContentType.ToString());
@@ -486,6 +611,78 @@ namespace Microsoft.AspNetCore.Diagnostics.HealthChecks
             Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
         }
 
+        [Fact]
+        public async Task CanListenOnPort_MultipleMiddleware()
+        {
+            var builder = new WebHostBuilder()
+                .Configure(app =>
+                {
+                    app.Use(next => async (context) =>
+                    {
+                        // Need to fake setting the connection info. TestServer doesn't
+                        // do that, because it doesn't have a connection.
+                        context.Connection.LocalPort = context.Request.Host.Port.Value;
+                        await next(context);
+                    });
 
+                    // Throws if used
+                    app.UseHealthChecks("/health", port: 5001, new HealthCheckOptions()
+                    {
+                        ResponseWriter = (c, r) => throw null,
+                    });
+
+                    app.UseHealthChecks("/health/detailed", port: 5001);
+                })
+                .ConfigureServices(services =>
+                {
+                    services.AddHealthChecks();
+                });
+
+            var server = new TestServer(builder);
+            var client = server.CreateClient();
+
+            var response = await client.GetAsync("http://localhost:5001/health/detailed");
+
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+            Assert.Equal("text/plain", response.Content.Headers.ContentType.ToString());
+            Assert.Equal("Healthy", await response.Content.ReadAsStringAsync());
+        }
+
+        [Fact]
+        public async Task CanListenOnPort_MultipleMiddleware_DifferentPorts()
+        {
+            var builder = new WebHostBuilder()
+                .Configure(app =>
+                {
+                    app.Use(next => async (context) =>
+                    {
+                        // Need to fake setting the connection info. TestServer doesn't
+                        // do that, because it doesn't have a connection.
+                        context.Connection.LocalPort = context.Request.Host.Port.Value;
+                        await next(context);
+                    });
+
+                    // Throws if used
+                    app.UseHealthChecks("/health", port: 5002, new HealthCheckOptions()
+                    {
+                        ResponseWriter = (c, r) => throw null,
+                    });
+
+                    app.UseHealthChecks("/health", port: 5001);
+                })
+                .ConfigureServices(services =>
+                {
+                    services.AddHealthChecks();
+                });
+
+            var server = new TestServer(builder);
+            var client = server.CreateClient();
+
+            var response = await client.GetAsync("http://localhost:5001/health");
+
+            Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+            Assert.Equal("text/plain", response.Content.Headers.ContentType.ToString());
+            Assert.Equal("Healthy", await response.Content.ReadAsStringAsync());
+        }
     }
 }
