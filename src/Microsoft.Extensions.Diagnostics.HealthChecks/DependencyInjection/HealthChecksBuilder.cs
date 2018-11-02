@@ -6,6 +6,7 @@ using System;
 
 #if NET45
 using System.Collections.Generic;
+using IServiceCollection = Autofac.ContainerBuilder;
 namespace Autofac
 #else
 namespace Microsoft.Extensions.DependencyInjection
@@ -16,13 +17,12 @@ namespace Microsoft.Extensions.DependencyInjection
 #if NET45
         private ICollection<HealthCheckRegistration> _registrations = new List<HealthCheckRegistration>();
         public ICollection<HealthCheckRegistration> Build() => new List<HealthCheckRegistration>(_registrations);
-#else
+#endif
         public HealthChecksBuilder(IServiceCollection services)
         {
             Services = services;
         }
         public IServiceCollection Services { get; }
-#endif
         public IHealthChecksBuilder Add(HealthCheckRegistration registration)
         {
             if (registration == null)

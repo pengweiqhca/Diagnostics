@@ -30,7 +30,7 @@ namespace Microsoft.Extensions.DependencyInjection
         {
             services.RegisterType<DefaultHealthCheckService>().As<HealthCheckService>().SingleInstance();
 
-            var builder = new HealthChecksBuilder();
+            var builder = new HealthChecksBuilder(services);
 
             services.Register(context =>
             {

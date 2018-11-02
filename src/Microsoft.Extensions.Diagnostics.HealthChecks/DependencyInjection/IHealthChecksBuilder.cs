@@ -3,6 +3,8 @@
 
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 #if NET45
+using IServiceCollection = Autofac.ContainerBuilder;
+
 namespace Autofac
 #else
 namespace Microsoft.Extensions.DependencyInjection
@@ -18,11 +20,10 @@ namespace Microsoft.Extensions.DependencyInjection
         /// </summary>
         /// <param name="registration">The <see cref="HealthCheckRegistration"/>.</param>
         IHealthChecksBuilder Add(HealthCheckRegistration registration);
-#if !NET45
+
         /// <summary>
         /// Gets the <see cref="IServiceCollection"/> into which <see cref="IHealthCheck"/> instances should be registered.
         /// </summary>
         IServiceCollection Services { get; }
-#endif
     }
 }
