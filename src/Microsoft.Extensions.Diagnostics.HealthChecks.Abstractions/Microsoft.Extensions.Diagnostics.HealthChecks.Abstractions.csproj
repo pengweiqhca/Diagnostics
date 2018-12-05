@@ -7,7 +7,7 @@ Commonly Used Types
 Microsoft.Extensions.Diagnostics.HealthChecks.IHealthCheck
     </Description>
         <RootNamespace>Microsoft.Extensions.Diagnostics.HealthChecks</RootNamespace>
-        <TargetFrameworks>net45;net461;netstandard2.0</TargetFrameworks>
+        <TargetFrameworks>net45</TargetFrameworks>
         <NoWarn>$(NoWarn);CS1591</NoWarn>
         <GenerateDocumentationFile>true</GenerateDocumentationFile>
         <PackageTags>diagnostics;healthchecks</PackageTags>
@@ -20,7 +20,7 @@ Microsoft.Extensions.Diagnostics.HealthChecks.IHealthCheck
         <SignAssembly>true</SignAssembly>
         <PublicSign Condition="'$(OS)' != 'Windows_NT'">true</PublicSign>
         <LangVersion>latest</LangVersion>
-        <Version>2.1.2</Version>
+        <Version>2.1.5-beta1</Version>
     </PropertyGroup>
 
 </Project>

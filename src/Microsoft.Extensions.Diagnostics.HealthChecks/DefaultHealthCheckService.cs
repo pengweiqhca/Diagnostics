@@ -2,6 +2,7 @@
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
 using System;
+using System.CodeDom;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -73,7 +74,7 @@ namespace Microsoft.Extensions.Diagnostics.HealthChecks
                 var context = new HealthCheckContext();
                 var entries = new Dictionary<string, HealthReportEntry>(StringComparer.OrdinalIgnoreCase);
 
-                var totalTime = Stopwatch.StartNew();
+                var totalTime = ValueStopwatch.StartNew();
 #if !NET45
                 Log.HealthCheckProcessingBegin(_logger);
 #endif
@@ -94,7 +95,7 @@ namespace Microsoft.Extensions.Diagnostics.HealthChecks
                     using (_logger.BeginScope(new HealthCheckLogScope(registration.Name)))
                     {
 #endif
-                    var stopwatch = Stopwatch.StartNew();
+                    var stopwatch = ValueStopwatch.StartNew();
                     context.Registration = registration;
 #if !NET45
                     Log.HealthCheckBegin(_logger, registration);
@@ -103,30 +104,30 @@ namespace Microsoft.Extensions.Diagnostics.HealthChecks
                     try
                     {
                         var result = await healthCheck.CheckHealthAsync(context, cancellationToken);
-                        var duration = stopwatch.Elapsed;
+                        var duration = stopwatch.GetElapsedTime();
 
-                        entry = new HealthReportEntry(
-                            status: result.Result ? HealthStatus.Healthy : registration.FailureStatus,
-                            description: result.Description,
-                            duration: duration,
-                            exception: result.Exception,
-                            data: result.Data);
+                            entry = new HealthReportEntry(
+                                status: result.Status,
+                                description: result.Description,
+                                duration: duration,
+                                exception: result.Exception,
+                                data: result.Data);
 #if !NET45
                             Log.HealthCheckEnd(_logger, registration, entry, duration);
                             Log.HealthCheckData(_logger, registration, entry);
 #endif
                     }
 
-                    // Allow cancellation to propagate.
-                    catch (Exception ex) when (ex as OperationCanceledException == null)
-                    {
-                        var duration = stopwatch.Elapsed;
-                        entry = new HealthReportEntry(
-                            status: HealthStatus.Failed,
-                            description: ex.Message,
-                            duration: duration,
-                            exception: ex,
-                            data: null);
+                        // Allow cancellation to propagate.
+                        catch (Exception ex) when (ex as OperationCanceledException == null)
+                        {
+                            var duration = stopwatch.GetElapsedTime();
+                            entry = new HealthReportEntry(
+                                status: HealthStatus.Unhealthy,
+                                description: ex.Message,
+                                duration: duration,
+                                exception: ex,
+                                data: null);
 #if !NET45
                             Log.HealthCheckError(_logger, registration, ex, duration);
 #endif
@@ -138,7 +139,7 @@ namespace Microsoft.Extensions.Diagnostics.HealthChecks
 #endif
                 }
 
-                var totalElapsedTime = totalTime.Elapsed;
+                var totalElapsedTime = totalTime.GetElapsedTime();
                 var report = new HealthReport(entries, totalElapsedTime);
 #if !NET45
                 Log.HealthCheckProcessingEnd(_logger, report.Status, totalElapsedTime);
@@ -247,10 +248,6 @@ namespace Microsoft.Extensions.Diagnostics.HealthChecks
 
                     case HealthStatus.Unhealthy:
                         _healthCheckEndUnhealthy(logger, registration.Name, duration.TotalMilliseconds, entry.Status, entry.Description, null);
-                        break;
-
-                    case HealthStatus.Failed:
-                        _healthCheckEndFailed(logger, registration.Name, duration.TotalMilliseconds, entry.Status, entry.Description, null);
                         break;
                 }
             }
