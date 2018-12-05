@@ -2,13 +2,9 @@
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
 using Microsoft.Extensions.Diagnostics.HealthChecks;
-#if NET45
 using IServiceCollection = Autofac.ContainerBuilder;
 
 namespace Autofac
-#else
-namespace Microsoft.Extensions.DependencyInjection
-#endif
 {
     /// <summary>
     /// A builder used to register health checks.

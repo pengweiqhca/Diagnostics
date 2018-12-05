@@ -1,83 +1,51 @@
 // Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
+using Autofac;
+using Autofac.Core.Lifetime;
 using System;
-using System.CodeDom;
 using System.Collections;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-#if NET45
-using Autofac;
-using Autofac.Core.Lifetime;
 using IServiceScopeFactory = Autofac.ILifetimeScope;
-#else
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Internal;
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
-#endif
 
 namespace Microsoft.Extensions.Diagnostics.HealthChecks
 {
-    public class DefaultHealthCheckService : HealthCheckService
+    internal class DefaultHealthCheckService : HealthCheckService
     {
         private readonly IServiceScopeFactory _scopeFactory;
-#if NET45
         private readonly HealthCheckServiceOptions _options;
-#else
-        private readonly IOptions<HealthCheckServiceOptions> _options;
-        private readonly ILogger<DefaultHealthCheckService> _logger;
-#endif
+
         public DefaultHealthCheckService(
             IServiceScopeFactory scopeFactory,
-#if NET45
             HealthCheckServiceOptions options)
-#else
-            IOptions<HealthCheckServiceOptions> options,
-            ILogger<DefaultHealthCheckService> logger)
-#endif
         {
             _scopeFactory = scopeFactory ?? throw new ArgumentNullException(nameof(scopeFactory));
             _options = options ?? throw new ArgumentNullException(nameof(options));
-#if NET45
+
             // We're specifically going out of our way to do this at startup time. We want to make sure you
             // get any kind of health-check related error as early as possible. Waiting until someone
             // actually tries to **run** health checks would be real baaaaad.
             ValidateRegistrations(_options.Registrations);
-#else
-            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-
-            ValidateRegistrations(_options.Value.Registrations);
-#endif
         }
         public override async Task<HealthReport> CheckHealthAsync(
             Func<HealthCheckRegistration, bool> predicate,
             CancellationToken cancellationToken = default)
         {
-#if NET45
             var registrations = _options.Registrations;
 
             using (var scope = _scopeFactory.BeginLifetimeScope(MatchingScopeLifetimeTags.RequestLifetimeScopeTag))
             {
                 var provider = new AutofacServiceProvider(scope);
-#else
-            var registrations = _options.Value.Registrations;
 
-            using (var scope = _scopeFactory.CreateScope())
-            {
-                var provider = scope.ServiceProvider;
-#endif
                 var context = new HealthCheckContext();
                 var entries = new Dictionary<string, HealthReportEntry>(StringComparer.OrdinalIgnoreCase);
 
                 var totalTime = ValueStopwatch.StartNew();
-#if !NET45
-                Log.HealthCheckProcessingBegin(_logger);
-#endif
+
                 foreach (var registration in registrations)
                 {
                     if (predicate != null && !predicate(registration))
@@ -89,22 +57,14 @@ namespace Microsoft.Extensions.Diagnostics.HealthChecks
 
                     var healthCheck = registration.Factory(provider);
 
-#if !NET45
-                    // If the health check does things like make Database queries using EF or backend HTTP calls,
-                    // it may be valuable to know that logs it generates are part of a health check. So we start a scope.
-                    using (_logger.BeginScope(new HealthCheckLogScope(registration.Name)))
-                    {
-#endif
-                    var stopwatch = ValueStopwatch.StartNew();
-                    context.Registration = registration;
-#if !NET45
-                    Log.HealthCheckBegin(_logger, registration);
-#endif
-                    HealthReportEntry entry;
-                    try
-                    {
-                        var result = await healthCheck.CheckHealthAsync(context, cancellationToken);
-                        var duration = stopwatch.GetElapsedTime();
+                        var stopwatch = ValueStopwatch.StartNew();
+                        context.Registration = registration;
+
+                        HealthReportEntry entry;
+                        try
+                        {
+                            var result = await healthCheck.CheckHealthAsync(context, cancellationToken);
+                            var duration = stopwatch.GetElapsedTime();
 
                             entry = new HealthReportEntry(
                                 status: result.Status,
@@ -112,11 +72,8 @@ namespace Microsoft.Extensions.Diagnostics.HealthChecks
                                 duration: duration,
                                 exception: result.Exception,
                                 data: result.Data);
-#if !NET45
-                            Log.HealthCheckEnd(_logger, registration, entry, duration);
-                            Log.HealthCheckData(_logger, registration, entry);
-#endif
-                    }
+
+                        }
 
                         // Allow cancellation to propagate.
                         catch (Exception ex) when (ex as OperationCanceledException == null)
@@ -128,22 +85,14 @@ namespace Microsoft.Extensions.Diagnostics.HealthChecks
                                 duration: duration,
                                 exception: ex,
                                 data: null);
-#if !NET45
-                            Log.HealthCheckError(_logger, registration, ex, duration);
-#endif
-                    }
 
-                    entries[registration.Name] = entry;
-#if !NET45
-                    }
-#endif
+                        }
+
+                        entries[registration.Name] = entry;
                 }
 
                 var totalElapsedTime = totalTime.GetElapsedTime();
                 var report = new HealthReport(entries, totalElapsedTime);
-#if !NET45
-                Log.HealthCheckProcessingEnd(_logger, report.Status, totalElapsedTime);
-#endif
                 return report;
             }
         }
@@ -162,115 +111,7 @@ namespace Microsoft.Extensions.Diagnostics.HealthChecks
                 throw new ArgumentException($"Duplicate health checks were registered with the name(s): {string.Join(", ", duplicateNames)}", nameof(registrations));
             }
         }
-#if !NET45
-        internal static class EventIds
-        {
-            public static readonly EventId HealthCheckProcessingBegin = new EventId(100, "HealthCheckProcessingBegin");
-            public static readonly EventId HealthCheckProcessingEnd = new EventId(101, "HealthCheckProcessingEnd");
 
-            public static readonly EventId HealthCheckBegin = new EventId(102, "HealthCheckBegin");
-            public static readonly EventId HealthCheckEnd = new EventId(103, "HealthCheckEnd");
-            public static readonly EventId HealthCheckError = new EventId(104, "HealthCheckError");
-            public static readonly EventId HealthCheckData = new EventId(105, "HealthCheckData");
-        }
-
-        private static class Log
-        {
-            private static readonly Action<ILogger, Exception> _healthCheckProcessingBegin = LoggerMessage.Define(
-                LogLevel.Debug,
-                EventIds.HealthCheckProcessingBegin,
-                "Running health checks");
-
-            private static readonly Action<ILogger, double, HealthStatus, Exception> _healthCheckProcessingEnd = LoggerMessage.Define<double, HealthStatus>(
-                LogLevel.Debug,
-                EventIds.HealthCheckProcessingEnd,
-                "Health check processing completed after {ElapsedMilliseconds}ms with combined status {HealthStatus}");
-
-            private static readonly Action<ILogger, string, Exception> _healthCheckBegin = LoggerMessage.Define<string>(
-                LogLevel.Debug,
-                EventIds.HealthCheckBegin,
-                "Running health check {HealthCheckName}");
-
-            // These are separate so they can have different log levels
-            private static readonly string HealthCheckEndText = "Health check {HealthCheckName} completed after {ElapsedMilliseconds}ms with status {HealthStatus} and '{HealthCheckDescription}'";
-
-            private static readonly Action<ILogger, string, double, HealthStatus, string, Exception> _healthCheckEndHealthy = LoggerMessage.Define<string, double, HealthStatus, string>(
-                LogLevel.Debug,
-                EventIds.HealthCheckEnd,
-                HealthCheckEndText);
-
-            private static readonly Action<ILogger, string, double, HealthStatus, string, Exception> _healthCheckEndDegraded = LoggerMessage.Define<string, double, HealthStatus, string>(
-                LogLevel.Warning,
-                EventIds.HealthCheckEnd,
-                HealthCheckEndText);
-
-            private static readonly Action<ILogger, string, double, HealthStatus, string, Exception> _healthCheckEndUnhealthy = LoggerMessage.Define<string, double, HealthStatus, string>(
-                LogLevel.Error,
-                EventIds.HealthCheckEnd,
-                HealthCheckEndText);
-
-            private static readonly Action<ILogger, string, double, HealthStatus, string, Exception> _healthCheckEndFailed = LoggerMessage.Define<string, double, HealthStatus, string>(
-                LogLevel.Error,
-                EventIds.HealthCheckEnd,
-                HealthCheckEndText);
-
-            private static readonly Action<ILogger, string, double, Exception> _healthCheckError = LoggerMessage.Define<string, double>(
-                LogLevel.Error,
-                EventIds.HealthCheckError,
-                "Health check {HealthCheckName} threw an unhandled exception after {ElapsedMilliseconds}ms");
-
-            public static void HealthCheckProcessingBegin(ILogger logger)
-            {
-                _healthCheckProcessingBegin(logger, null);
-            }
-
-            public static void HealthCheckProcessingEnd(ILogger logger, HealthStatus status, TimeSpan duration)
-            {
-                _healthCheckProcessingEnd(logger, duration.TotalMilliseconds, status, null);
-            }
-
-            public static void HealthCheckBegin(ILogger logger, HealthCheckRegistration registration)
-            {
-                _healthCheckBegin(logger, registration.Name, null);
-            }
-
-            public static void HealthCheckEnd(ILogger logger, HealthCheckRegistration registration, HealthReportEntry entry, TimeSpan duration)
-            {
-                switch (entry.Status)
-                {
-                    case HealthStatus.Healthy:
-                        _healthCheckEndHealthy(logger, registration.Name, duration.TotalMilliseconds, entry.Status, entry.Description, null);
-                        break;
-
-                    case HealthStatus.Degraded:
-                        _healthCheckEndDegraded(logger, registration.Name, duration.TotalMilliseconds, entry.Status, entry.Description, null);
-                        break;
-
-                    case HealthStatus.Unhealthy:
-                        _healthCheckEndUnhealthy(logger, registration.Name, duration.TotalMilliseconds, entry.Status, entry.Description, null);
-                        break;
-                }
-            }
-
-            public static void HealthCheckError(ILogger logger, HealthCheckRegistration registration, Exception exception, TimeSpan duration)
-            {
-                _healthCheckError(logger, registration.Name, duration.TotalMilliseconds, exception);
-            }
-
-            public static void HealthCheckData(ILogger logger, HealthCheckRegistration registration, HealthReportEntry entry)
-            {
-                if (entry.Data.Count > 0 && logger.IsEnabled(LogLevel.Debug))
-                {
-                    logger.Log(
-                        LogLevel.Debug,
-                        EventIds.HealthCheckData,
-                        new HealthCheckDataLogValue(registration.Name, entry.Data),
-                        null,
-                        (state, ex) => state.ToString());
-                }
-            }
-        }
-#endif
         internal class HealthCheckDataLogValue : IReadOnlyList<KeyValuePair<string, object>>
         {
             private readonly string _name;
@@ -337,7 +178,7 @@ namespace Microsoft.Extensions.Diagnostics.HealthChecks
                 return _formatted;
             }
         }
-#if NET45
+
         internal class AutofacServiceProvider : IServiceProvider
         {
             private readonly ILifetimeScope _scope;
@@ -346,6 +187,5 @@ namespace Microsoft.Extensions.Diagnostics.HealthChecks
 
             public object GetService(Type serviceType) => _scope.ResolveOptional(serviceType);
         }
-#endif
     }
 }
