@@ -8,6 +8,11 @@ Microsoft.Extensions.Diagnostics.HealthChecks.IHealthChecksBuilder
     </Description>
         <TargetFrameworks>net45</TargetFrameworks>
         <NoWarn>$(NoWarn);CS1591</NoWarn>
+        <GenerateDocumentationFile>true</GenerateDocumentationFile>
+        <PackageTags>diagnostics;healthchecks</PackageTags>
+        <DebugSymbols>true</DebugSymbols>
+        <DebugType>full</DebugType>
+        <IncludeSymbols>True</IncludeSymbols>
         <GeneratePackageOnBuild Condition="'$(Configuration)'=='Release'">true</GeneratePackageOnBuild>
         <Product>Microsoft ASP.NET Core</Product>
         <RepositoryUrl>https://github.com/aspnet/Diagnostics</RepositoryUrl>
@@ -16,7 +21,7 @@ Microsoft.Extensions.Diagnostics.HealthChecks.IHealthChecksBuilder
         <SignAssembly>true</SignAssembly>
         <PublicSign Condition="'$(OS)' != 'Windows_NT'">true</PublicSign>
         <LangVersion>latest</LangVersion>
-        <Version>2.1.5-beta1</Version>
+        <Version>2.1.5</Version>
     </PropertyGroup>
 
     <ItemGroup>

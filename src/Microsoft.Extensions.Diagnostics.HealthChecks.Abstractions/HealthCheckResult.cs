@@ -14,7 +14,7 @@ namespace Microsoft.Extensions.Diagnostics.HealthChecks
         private static readonly IReadOnlyDictionary<string, object> _emptyReadOnlyDictionary = new Dictionary<string, object>();
 
         /// <summary>
-        /// Creates a new <see cref="HealthCheckResult"/> with the specified values for <paramref name="status"/>, 
+        /// Creates a new <see cref="HealthCheckResult"/> with the specified values for <paramref name="status"/>,
         /// <paramref name="exception"/>, <paramref name="description"/>, and <paramref name="data"/>.
         /// </summary>
         /// <param name="status">A value indicating the status of the component that was checked.</param>
