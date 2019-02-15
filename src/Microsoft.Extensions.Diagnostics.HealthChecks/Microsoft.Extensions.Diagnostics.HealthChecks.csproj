@@ -21,7 +21,7 @@ Microsoft.Extensions.Diagnostics.HealthChecks.IHealthChecksBuilder
         <SignAssembly>true</SignAssembly>
         <PublicSign Condition="'$(OS)' != 'Windows_NT'">true</PublicSign>
         <LangVersion>latest</LangVersion>
-        <Version>2.1.5</Version>
+        <Version>2.1.5.1</Version>
     </PropertyGroup>
 
     <ItemGroup>

@@ -63,7 +63,7 @@ namespace Microsoft.Extensions.Diagnostics.HealthChecks
                         HealthReportEntry entry;
                         try
                         {
-                            var result = await healthCheck.CheckHealthAsync(context, cancellationToken);
+                            var result = await healthCheck.CheckHealthAsync(context, cancellationToken).ConfigureAwait(false);
                             var duration = stopwatch.GetElapsedTime();
 
                             entry = new HealthReportEntry(
@@ -76,7 +76,7 @@ namespace Microsoft.Extensions.Diagnostics.HealthChecks
                         }
 
                         // Allow cancellation to propagate.
-                        catch (Exception ex) when (ex as OperationCanceledException == null)
+                        catch (Exception ex) when (!(ex is OperationCanceledException))
                         {
                             var duration = stopwatch.GetElapsedTime();
                             entry = new HealthReportEntry(
